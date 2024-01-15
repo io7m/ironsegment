@@ -31,6 +31,7 @@ import com.io7m.jmulticlose.core.CloseableCollection;
 import com.io7m.lanark.core.RDottedName;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.TreeMap;
@@ -102,65 +103,82 @@ ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 """);
 
-        final var iid1 = new ISImageID(1L);
-        final var iid2 = new ISImageID(2L);
-        final var iid3 = new ISImageID(3L);
-        images.put(iid1, new ISImage(iid1, ISImageSemantic.DENOISE_RGB8));
-        images.put(iid2, new ISImage(iid2, ISImageSemantic.DEPTH_16));
-        images.put(iid3, new ISImage(iid3, ISImageSemantic.OBJECT_ID_32));
+        long index = 1L;
+        for (final var semantic : ISImageSemantic.values()) {
+          final var iid1 = new ISImageID(index);
+          images.put(iid1, new ISImage(iid1, semantic));
+          ++index;
+        }
 
         final var info =
           new ISManifest(
-            new ISImages(images, 1024L, 1024L),
+            new ISImages(images, 32L, 16L),
             objects,
             metadata
           );
         section.setManifest(info);
       }
 
-      try (var section = writable.createSectionImage()) {
-        final var imageData =
-          section.createImageData(
-            new ISImageID(1L),
-            1024L,
-            1024L,
-            ISImageSemantic.DENOISE_RGB8
-          );
+      long index = 1L;
+      for (final var semantic : ISImageSemantic.values()) {
+        try (var section = writable.createSectionImage()) {
+          final var imageData =
+            section.createImageData(
+              new ISImageID(index),
+              32L,
+              16L,
+              semantic
+            );
 
-        try (var c = imageData.channel()) {
-          final var data = new byte[4];
-          c.write(ByteBuffer.wrap(data));
+          try (var c = imageData.channel()) {
+            final var pixelSize = semantic.pixelSizeOctets();
+            final var data = new byte[(int) (32L * 16L * pixelSize)];
+            final var dataBuffer = ByteBuffer.wrap(data);
+            dataBuffer.order(ByteOrder.BIG_ENDIAN);
+
+            for (int pixel = 0; pixel < 32 * 16; ++pixel) {
+              switch (semantic) {
+                case DENOISE_RGB16 -> {
+                  dataBuffer.putChar((char) pixel);
+                  dataBuffer.putChar((char) (pixel + 1));
+                  dataBuffer.putChar((char) (pixel + 2));
+                }
+                case DENOISE_RGB8 -> {
+                  dataBuffer.put((byte) pixel);
+                  dataBuffer.put((byte) (pixel + 1));
+                  dataBuffer.put((byte) (pixel + 2));
+                }
+                case DENOISE_RGBA16 -> {
+                  dataBuffer.putChar((char) pixel);
+                  dataBuffer.putChar((char) (pixel + 1));
+                  dataBuffer.putChar((char) (pixel + 2));
+                  dataBuffer.putChar((char) (pixel + 3));
+                }
+                case DENOISE_RGBA8 -> {
+                  dataBuffer.put((byte) pixel);
+                  dataBuffer.put((byte) (pixel + 1));
+                  dataBuffer.put((byte) (pixel + 2));
+                  dataBuffer.put((byte) (pixel + 3));
+                }
+                case DEPTH_16 -> {
+                  dataBuffer.putChar((char) pixel);
+                }
+                case DEPTH_32 -> {
+                  dataBuffer.putInt(pixel);
+                }
+                case MONOCHROME_LINES_8 -> {
+                  dataBuffer.put((byte) pixel);
+                }
+                case OBJECT_ID_32 -> {
+                  dataBuffer.putInt(pixel);
+                }
+              }
+            }
+
+            c.write(ByteBuffer.wrap(data));
+          }
         }
-      }
-
-      try (var section = writable.createSectionImage()) {
-        final var imageData =
-          section.createImageData(
-            new ISImageID(1L),
-            1024L,
-            1024L,
-            ISImageSemantic.DEPTH_16
-          );
-
-        try (var c = imageData.channel()) {
-          final var data = new byte[4];
-          c.write(ByteBuffer.wrap(data));
-        }
-      }
-
-      try (var section = writable.createSectionImage()) {
-        final var imageData =
-          section.createImageData(
-            new ISImageID(1L),
-            1024L,
-            1024L,
-            ISImageSemantic.MONOCHROME_LINES_8
-          );
-
-        try (var c = imageData.channel()) {
-          final var data = new byte[4];
-          c.write(ByteBuffer.wrap(data));
-        }
+        ++index;
       }
 
       try (var section = writable.createSectionEnd()) {

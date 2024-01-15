@@ -24,43 +24,50 @@ package com.io7m.ironsegment.api;
 public enum ISImageSemantic
 {
   /**
-   * The image is the source for denoising. RGB, 16 bits per channel.
+   * The image is the source for denoising. RGB, 16 bits per channel,
+   * unsigned normalized fixed-point.
    */
 
   DENOISE_RGB16,
 
   /**
-   * The image is the source for denoising. RGB, 8 bits per channel.
+   * The image is the source for denoising. RGB, 8 bits per channel,
+   * unsigned normalized fixed-point.
    */
 
   DENOISE_RGB8,
 
   /**
-   * The image is the source for denoising. RGBA, 16 bits per channel.
+   * The image is the source for denoising. RGBA, 16 bits per channel,
+   * unsigned normalized fixed-point.
    */
 
   DENOISE_RGBA16,
 
   /**
-   * The image is the source for denoising. RGBA, 8 bits per channel.
+   * The image is the source for denoising. RGBA, 8 bits per channel,
+   * unsigned normalized fixed-point.
    */
 
   DENOISE_RGBA8,
 
   /**
-   * The image is a depth map, 16 bits per pixel.
+   * The image is a depth map, 16 bits per pixel,
+   * unsigned normalized fixed-point.
    */
 
   DEPTH_16,
 
   /**
-   * The image is a depth map, 32 bits per pixel.
+   * The image is a depth map, 32 bits per pixel,
+   * unsigned normalized fixed-point.
    */
 
   DEPTH_32,
 
   /**
-   * The image is a monochrome lines image, 8 bits per pixel.
+   * The image is a monochrome lines image, 8 bits per pixel,
+   * unsigned normalized fixed-point.
    */
 
   MONOCHROME_LINES_8,
